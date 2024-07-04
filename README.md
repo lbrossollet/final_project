@@ -1,110 +1,89 @@
-# final_project
-Here's an example of a `README.txt` file for your project:
+C'est un projet intéressant et important ! Voici une feuille de route pour votre projet, ainsi qu'une structure de fichiers suggérée pour vous aider à démarrer.
 
----
+## Feuille de Route
 
-# Paris Neighborhoods and Traffic Counts Visualization Project
+### Phase 1 : Préparation des Données
+1. **Nettoyage et Préparation des Données**
+   - Nettoyer et prétraiter les données de circulation.
+   - S'assurer que les données des quartiers sont correctement formatées et fusionnées avec les données de circulation.
 
-## Introduction
+2. **Analyse Géospatiale**
+   - Attribuer les points de circulation à leurs quartiers respectifs.
+   - Enregistrer les résultats dans un fichier GeoJSON.
 
-This project aims to visualize traffic counting points and Paris neighborhoods on a map, using CSV files as the data source and creating GeoJSON files for import into Tableau.
+### Phase 2 : Intégration de l'API de Trajet
+1. **Recherche et Sélection d'une API**
+   - Trouver une API de cartographie et de routage (par exemple, Google Maps, Mapbox, OpenRouteService).
+   - S'assurer que l'API permet de déterminer les quartiers traversés par un trajet en fonction des points de passage.
 
-## Project Steps
+2. **Développement de l'Intégration de l'API**
+   - Écrire des scripts pour appeler l'API et récupérer les informations de trajet.
+   - Utiliser les coordonnées du trajet pour déterminer les quartiers traversés.
 
-### 1. Data Preparation
+### Phase 3 : Analyse de la Circulation en Temps Réel
+1. **Développement d'un Modèle de Prévision de la Circulation**
+   - Utiliser les données historiques de circulation pour entraîner un modèle de prévision.
+   - Prendre en compte les heures de la journée et les jours de la semaine.
 
-#### a. Import Libraries and Load CSV Files
+2. **Intégration du Modèle avec l'API de Trajet**
+   - Analyser le trajet pour déterminer les périodes de circulation dense ou fluide en fonction des prévisions.
 
-```python
-import pandas as pd
-import geopandas as gpd
-from shapely.geometry import Point, Polygon
-import json
+### Phase 4 : Développement de l'Interface Utilisateur
+1. **Développement de l'API de Visualisation**
+   - Utiliser un framework comme Streamlit pour développer une interface utilisateur.
+   - Permettre aux utilisateurs d'entrer les points de passage et de visualiser les trajets avec des informations sur la circulation.
 
-# Load the CSV files
-df_comptage = pd.read_csv("comptages-routiers-permanents.csv", sep=";")
-df_quartiers = pd.read_csv("quartier_paris.csv", sep=";")
-```
+2. **Tests et Validation**
+   - Tester l'outil avec différents scénarios pour s'assurer de son bon fonctionnement.
+   - Recueillir des retours utilisateurs et améliorer l'outil en conséquence.
 
-#### b. Convert Traffic Count Points Data to GeoDataFrame
+## Structure des Fichiers
 
-```python
-# Extract latitude and longitude coordinates
-df_comptage[['latitude', 'longitude']] = df_comptage['geo_point_2d'].str.split(', ', expand=True)
-df_comptage['latitude'] = df_comptage['latitude'].astype(float)
-df_comptage['longitude'] = df_comptage['longitude'].astype(float)
+### Répertoire Principal : `optimize_trajects`
+- `data/`
+  - `traffic_data.csv`
+  - `quartier_paris.csv`
+  - `processed_data.geojson`
+- `scripts/`
+  - `data_preprocessing.py`
+  - `geospatial_analysis.py`
+  - `api_integration.py`
+  - `traffic_forecast_model.py`
+  - `visualization.py`
+- `notebooks/`
+  - `data_exploration.ipynb`
+  - `model_training.ipynb`
+- `streamlit_app/`
+  - `app.py`
+- `tests/`
+  - `test_data_preprocessing.py`
+  - `test_geospatial_analysis.py`
+  - `test_api_integration.py`
+  - `test_traffic_forecast_model.py`
+- `README.md`
+- `requirements.txt`
 
-# Select necessary columns and remove duplicates
-df_unique_points = df_comptage[['Identifiant arc', 'Libelle', 'latitude', 'longitude']].drop_duplicates()
+## Détails de la Feuille de Route et des Fichiers
 
-# Convert points to GeoDataFrame
-geometry_points = [Point(lon, lat) for lon, lat in zip(df_unique_points['longitude'], df_unique_points['latitude'])]
-gdf_points = gpd.GeoDataFrame(df_unique_points, geometry=geometry_points, crs="EPSG:4326")
-```
+### Phase 1 : Préparation des Données
+- `data_preprocessing.py` : Script pour nettoyer et préparer les données de circulation.
+- `geospatial_analysis.py` : Script pour attribuer les points de circulation aux quartiers et générer le fichier GeoJSON.
 
-#### c. Convert Neighborhood Data to GeoDataFrame
+### Phase 2 : Intégration de l'API de Trajet
+- `api_integration.py` : Script pour intégrer l'API de routage et récupérer les informations de trajet.
 
-```python
-def parse_polygon(polygon_str):
-    coordinates = json.loads(polygon_str)['coordinates'][0]
-    coordinates = [(float(lon), float(lat)) for lon, lat in coordinates]
-    return Polygon(coordinates)
+### Phase 3 : Analyse de la Circulation en Temps Réel
+- `traffic_forecast_model.py` : Script pour entraîner et utiliser le modèle de prévision de la circulation.
 
-df_quartiers['geometry'] = df_quartiers['Geometry'].apply(parse_polygon)
+### Phase 4 : Développement de l'Interface Utilisateur
+- `app.py` : Script Streamlit pour créer l'interface utilisateur.
+- `visualization.py` : Fonctions pour visualiser les trajets et les informations de circulation.
 
-# Convert neighborhoods to GeoDataFrame
-gdf_quartiers = gpd.GeoDataFrame(df_quartiers, geometry='geometry', crs="EPSG:4326")
-```
+### Tests
+- Scripts de test pour vérifier le bon fonctionnement des différentes étapes du processus.
 
-#### d. Spatial Join to Find the Corresponding Neighborhood for Each Point
+### Documentation
+- `README.md` : Documentation du projet avec les instructions d'installation et d'utilisation.
+- `requirements.txt` : Liste des dépendances nécessaires au projet.
 
-```python
-# Perform a spatial join to find the neighborhood for each point
-joined = gpd.sjoin(gdf_points, gdf_quartiers, predicate='within', how='left')
-
-# Add the 'Quartier' column to the points
-df_unique_points['Quartier'] = joined['L_QU']
-```
-
-#### e. Save Results to CSV and GeoJSON Files
-
-```python
-# Save the result to a CSV file
-df_unique_points.to_csv("df_unique_points_with_quartiers.csv", index=False)
-
-# Save the result to a GeoJSON file
-gdf_points['Quartier'] = joined['L_QU']
-gdf_points.to_file("df_unique_points_with_quartiers.geojson", driver="GeoJSON")
-```
-
-### 2. Importing Files into Tableau
-
-1. **Open Tableau:**
-   - Click on "Connect" in the top left.
-   - Select "File" and choose "GeoJSON".
-   - Import the files `df_unique_points_with_quartiers.geojson` and `quartier_paris.geojson`.
-
-2. **Add Neighborhood Polygons:**
-   - Go to a new worksheet.
-   - Drag the `quartier_paris.geojson` file into the view.
-   - Tableau will automatically detect the polygon geometries.
-
-3. **Add Traffic Count Points:**
-   - Stay in the same worksheet.
-   - Drag the `df_unique_points_with_quartiers.geojson` file into the view.
-   - Tableau will automatically detect the point geometries.
-
-4. **Customize the Map:**
-   - Click on the "Marks" card and ensure polygons are displayed as "Polygons" and points as "Points".
-   - Adjust the colors and sizes of the marks to easily differentiate between neighborhood polygons and traffic count points.
-
-5. **Synchronize Axes (if needed):**
-   - If the points and polygons do not align correctly, synchronize the axes by right-clicking on the axis and selecting "Synchronize Axis".
-
-## Conclusion
-
-This project demonstrates how to prepare, transform, and visualize spatial data using Python and Tableau. The provided steps guide you through data preparation, conversion to appropriate formats, and visualization in Tableau.
-
----
-
-Feel free to edit and expand this README as necessary for your project.
+En suivant cette feuille de route et cette structure de fichiers, vous devriez être bien préparé pour développer votre outil d'optimisation des trajets pour les professionnels. N'hésitez pas à demander si vous avez besoin d'aide supplémentaire à chaque étape du projet.
