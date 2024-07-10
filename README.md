@@ -1,5 +1,3 @@
-C'est un projet intéressant et important ! Voici une feuille de route pour votre projet, ainsi qu'une structure de fichiers suggérée pour vous aider à démarrer.
-
 ## Feuille de Route
 
 ### Phase 1 : Préparation des Données
